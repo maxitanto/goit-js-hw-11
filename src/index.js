@@ -1,18 +1,50 @@
 import { fetchImages } from './js/fetch-images';
-import axios from 'axios';
+import { createMarkup } from './js/render-gallery';
 import Notiflix from 'notiflix';
 
 const searchForm = document.querySelector('.search-form');
 const gallery = document.querySelector('.gallery');
+const target = document.querySelector('.js-guard');
+
+let currentPage = 1;
+let searchData = '';
 
 searchForm.addEventListener('submit', handlerForm);
+
+let options = {
+  root: null,
+  rootMargin: '300px',
+  threshold: 1.0,
+};
+
+let observer = new IntersectionObserver(onLoad, options);
+
+function onLoad(entries, observer) {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      currentPage += 1;
+      fetchImages(searchData, currentPage)
+        .then(resp => {
+          const dataArray = resp.data.hits;
+          gallery.insertAdjacentHTML('beforeend', createMarkup(dataArray));
+          // const totalPages = Math.ceil(resp.data.totalHits / 40);
+
+          // if (page > totalPages) {
+          //   observer.unobserve();
+          // }
+        })
+        .catch(error => console.log(error));
+    }
+  });
+}
 
 //Отримуємо результат вводу юзером
 function handlerForm(evt) {
   evt.preventDefault();
-  const searchData = evt.currentTarget.searchQuery.value;
+  gallery.innerHTML = '';
+  searchData = evt.currentTarget.searchQuery.value;
 
-  fetchImages(searchData)
+  fetchImages(searchData, currentPage)
     .then(resp => {
       const dataArray = resp.data.hits;
       if (dataArray.length === 0) {
@@ -20,41 +52,8 @@ function handlerForm(evt) {
           'Sorry, there are no images matching your search query. Please try again.'
         );
       }
-      gallery.innerHTML = createMarkup(dataArray);
+      gallery.insertAdjacentHTML('beforeend', createMarkup(dataArray));
+      observer.observe(target);
     })
     .catch(error => console.log(error));
-}
-
-//Функція робить розмітку
-function createMarkup(arr) {
-  const markup = arr
-    .map(
-      ({
-        webformatURL,
-        tags,
-        likes,
-        views,
-        comments,
-        downloads,
-      }) => `<div class="photo-card">
-  <img src="${webformatURL}" alt="${tags}" loading="lazy" />
-  <div class="info">
-    <p class="info-item">
-      <b>Likes ${likes}</b>
-    </p>
-    <p class="info-item">
-      <b>Views ${views}</b>
-    </p>
-    <p class="info-item">
-      <b>Comments ${comments}</b>
-    </p>
-    <p class="info-item">
-      <b>Downloads ${downloads}</b>
-    </p>
-  </div>
-</div>`
-    )
-    .join('');
-
-  return markup;
 }
