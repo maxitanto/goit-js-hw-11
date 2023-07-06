@@ -1,10 +1,17 @@
 import { fetchImages } from './js/fetch-images';
 import { createMarkup } from './js/render-gallery';
 import Notiflix from 'notiflix';
+import SimpleLightbox from 'simplelightbox';
+import 'simplelightbox/dist/simple-lightbox.min.css';
 
 const searchForm = document.querySelector('.search-form');
 const gallery = document.querySelector('.gallery');
 const target = document.querySelector('.js-guard');
+
+const lightbox = new SimpleLightbox('.gallery a', {
+  captionsData: 'alt',
+  captionDelay: 250,
+});
 
 let currentPage = 1;
 let searchData = '';
@@ -26,6 +33,7 @@ function onLoad(entries, observer) {
         .then(resp => {
           const dataArray = resp.data.hits;
           gallery.insertAdjacentHTML('beforeend', createMarkup(dataArray));
+          lightbox.refresh();
 
           //Перевірка. Якщо кількість сторінок дорівнює поточній сторінці, знімаємо observer
           const totalPages = Math.ceil(
@@ -72,6 +80,7 @@ function handlerForm(evt) {
 
       gallery.insertAdjacentHTML('beforeend', createMarkup(dataArray));
       observer.observe(target);
+      lightbox.refresh();
     })
     .catch(error => {
       Notiflix.Notify.failure(error.message);
