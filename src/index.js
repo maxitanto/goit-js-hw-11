@@ -9,8 +9,7 @@ const target = document.querySelector('.js-guard');
 let currentPage = 1;
 let searchData = '';
 
-searchForm.addEventListener('submit', handlerForm);
-
+//Реалізація infinite scroll
 let options = {
   root: null,
   rootMargin: '300px',
@@ -27,16 +26,27 @@ function onLoad(entries, observer) {
         .then(resp => {
           const dataArray = resp.data.hits;
           gallery.insertAdjacentHTML('beforeend', createMarkup(dataArray));
-          // const totalPages = Math.ceil(resp.data.totalHits / 40);
 
-          // if (page > totalPages) {
-          //   observer.unobserve();
-          // }
+          //Перевірка. Якщо кількість сторінок дорівнює поточній сторінці, знімаємо observer
+          const totalPages = Math.ceil(
+            resp.data.totalHits / resp.data.hits.length
+          );
+          if (currentPage === totalPages) {
+            observer.unobserve(target);
+            Notiflix.Notify.warning(
+              "We're sorry, but you've reached the end of search results.",
+              {
+                timeout: 4000,
+              }
+            );
+          }
         })
         .catch(error => console.log(error));
     }
   });
 }
+
+searchForm.addEventListener('submit', handlerForm);
 
 //Отримуємо результат вводу юзером
 function handlerForm(evt) {
@@ -49,11 +59,22 @@ function handlerForm(evt) {
       const dataArray = resp.data.hits;
       if (dataArray.length === 0) {
         Notiflix.Notify.failure(
-          'Sorry, there are no images matching your search query. Please try again.'
+          'Sorry, there are no images matching your search query. Please try again.',
+          {
+            timeout: 5000,
+          }
         );
       }
+      const totalHits = resp.data.totalHits;
+      if (totalHits !== 0) {
+        Notiflix.Notify.success(`Hooray! We found ${totalHits} images.`);
+      }
+
       gallery.insertAdjacentHTML('beforeend', createMarkup(dataArray));
       observer.observe(target);
     })
-    .catch(error => console.log(error));
+    .catch(error => {
+      Notiflix.Notify.failure(error.message);
+      console.log(error);
+    });
 }

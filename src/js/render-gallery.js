@@ -10,19 +10,21 @@ function createMarkup(arr) {
         comments,
         downloads,
       }) => `<div class="photo-card">
+  <div class="card-thumb">
   <img src="${webformatURL}" alt="${tags}" loading="lazy" />
+  </div>
   <div class="info">
     <p class="info-item">
-      <b>Likes ${likes}</b>
+      <b>Likes</b> ${likes}
     </p>
     <p class="info-item">
-      <b>Views ${views}</b>
+      <b>Views</b> ${views}
     </p>
     <p class="info-item">
-      <b>Comments ${comments}</b>
+      <b>Comments</b> ${comments}
     </p>
     <p class="info-item">
-      <b>Downloads ${downloads}</b>
+      <b>Downloads</b> ${downloads}
     </p>
   </div>
 </div>`
