@@ -39,7 +39,6 @@ async function handlerForm(evt) {
   try {
     const { data } = await fetchImages(searchData, currentPage);
     const dataArray = data.hits;
-    console.log(dataArray);
 
     if (dataArray.length === 0) {
       Notiflix.Notify.failure(
@@ -78,8 +77,6 @@ async function onLoad(entries, observer) {
 
         //Перевірка. Якщо кількість сторінок дорівнює поточній сторінці, знімаємо observer
         let totalPages = Math.ceil(data.totalHits / perPage);
-        console.log('Всего страниц', totalPages);
-        console.log('Текущая страница', currentPage);
 
         if (currentPage === totalPages) {
           observer.unobserve(target);
