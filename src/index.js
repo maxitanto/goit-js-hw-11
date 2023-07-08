@@ -15,6 +15,7 @@ const lightbox = new SimpleLightbox('.gallery a', {
 
 let currentPage = 1;
 let searchData = '';
+const perPage = 40;
 
 //Реалізація infinite scroll
 let options = {
@@ -25,65 +26,75 @@ let options = {
 
 let observer = new IntersectionObserver(onLoad, options);
 
-function onLoad(entries, observer) {
-  entries.forEach(entry => {
+searchForm.addEventListener('submit', handlerForm);
+
+//Отримуємо результат вводу юзером
+async function handlerForm(evt) {
+  evt.preventDefault();
+  gallery.innerHTML = '';
+  currentPage = 1;
+  searchData = evt.currentTarget.searchQuery.value;
+  observer.unobserve(target);
+
+  try {
+    const { data } = await fetchImages(searchData, currentPage);
+    const dataArray = data.hits;
+    console.log(dataArray);
+
+    if (dataArray.length === 0) {
+      Notiflix.Notify.failure(
+        'Sorry, there are no images matching your search query. Please try again.',
+        {
+          timeout: 5000,
+        }
+      );
+      return;
+    }
+    const totalHits = data.totalHits;
+    if (totalHits !== 0) {
+      Notiflix.Notify.success(`Hooray! We found ${totalHits} images.`);
+    }
+
+    gallery.insertAdjacentHTML('beforeend', createMarkup(dataArray));
+    lightbox.refresh();
+    observer.observe(target);
+  } catch (error) {
+    Notiflix.Notify.failure(error.message);
+    console.log(error);
+  } finally {
+    searchForm.reset();
+  }
+}
+
+async function onLoad(entries, observer) {
+  entries.forEach(async entry => {
     if (entry.isIntersecting) {
       currentPage += 1;
-      fetchImages(searchData, currentPage)
-        .then(resp => {
-          const dataArray = resp.data.hits;
-          gallery.insertAdjacentHTML('beforeend', createMarkup(dataArray));
-          lightbox.refresh();
+      try {
+        const { data } = await fetchImages(searchData, currentPage);
+        const dataArray = data.hits;
+        gallery.insertAdjacentHTML('beforeend', createMarkup(dataArray));
+        lightbox.refresh();
 
-          //Перевірка. Якщо кількість сторінок дорівнює поточній сторінці, знімаємо observer
-          const totalPages = Math.ceil(
-            resp.data.totalHits / resp.data.hits.length
+        //Перевірка. Якщо кількість сторінок дорівнює поточній сторінці, знімаємо observer
+        let totalPages = Math.ceil(data.totalHits / perPage);
+        console.log('Всего страниц', totalPages);
+        console.log('Текущая страница', currentPage);
+
+        if (currentPage === totalPages) {
+          observer.unobserve(target);
+          Notiflix.Notify.warning(
+            "We're sorry, but you've reached the end of search results.",
+            {
+              timeout: 4000,
+            }
           );
-          if (currentPage === totalPages) {
-            observer.unobserve(target);
-            Notiflix.Notify.warning(
-              "We're sorry, but you've reached the end of search results.",
-              {
-                timeout: 4000,
-              }
-            );
-          }
-        })
-        .catch(error => console.log(error));
+        }
+      } catch (error) {
+        console.log(error);
+      }
     }
   });
 }
 
-searchForm.addEventListener('submit', handlerForm);
-
-//Отримуємо результат вводу юзером
-function handlerForm(evt) {
-  evt.preventDefault();
-  gallery.innerHTML = '';
-  searchData = evt.currentTarget.searchQuery.value;
-
-  fetchImages(searchData, currentPage)
-    .then(resp => {
-      const dataArray = resp.data.hits;
-      if (dataArray.length === 0) {
-        Notiflix.Notify.failure(
-          'Sorry, there are no images matching your search query. Please try again.',
-          {
-            timeout: 5000,
-          }
-        );
-      }
-      const totalHits = resp.data.totalHits;
-      if (totalHits !== 0) {
-        Notiflix.Notify.success(`Hooray! We found ${totalHits} images.`);
-      }
-
-      gallery.insertAdjacentHTML('beforeend', createMarkup(dataArray));
-      observer.observe(target);
-      lightbox.refresh();
-    })
-    .catch(error => {
-      Notiflix.Notify.failure(error.message);
-      console.log(error);
-    });
-}
+export { perPage };
